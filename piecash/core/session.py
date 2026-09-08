@@ -15,6 +15,16 @@ from .book import Book
 from .._common import GnucashException
 from ..sa_extra import create_piecash_engine, DeclarativeBase, Session
 
+
+def _make_session(bind):
+    """Create a Session compatible with SQLAlchemy 1.4 and 2.x."""
+    try:
+        # SA 1.4: future=True opts into 2.0-style behavior
+        return Session(bind=bind, future=True)
+    except TypeError:
+        # SA 2.x: future mode is the only mode (no future= kwarg)
+        return Session(bind=bind)
+
 # version of tables changed between 2.6 and 3.0
 #   ('invoices', 4)
 #   ('prices', 3)
@@ -317,7 +327,7 @@ def create_book(
     # create all (tables, fk, ...)
     DeclarativeBase.metadata.create_all(engine)
 
-    s = Session(bind=engine, future=True)
+    s = _make_session(engine)
 
     # create all rows in version table
     assert (
@@ -441,7 +451,7 @@ def open_book(
         if locks and not open_if_lock:
             raise GnucashException("Lock on the file")
 
-        s = Session(bind=engine, future=True)
+        s = _make_session(engine)
 
         # check the versions in the table versions is consistent with the API
         version_book = {

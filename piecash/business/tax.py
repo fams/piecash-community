@@ -195,6 +195,10 @@ class TaxtableEntry(DeclarativeBase):
         self.account = account
         if taxtable:
             self.taxtable = taxtable
+            # Session(future=True) / SQLAlchemy 2.x: many-to-one assignment no longer
+            # auto-adds the child to the session; add explicitly for cascade/persist.
+            if taxtable.book is not None:
+                taxtable.book.add(self)
 
     def __str__(self):
         return "TaxEntry<{} {} in {}>".format(self.amount, self.type, self.account.name)

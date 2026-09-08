@@ -547,27 +547,28 @@ class InvoiceBase(DeclarativeBaseGuid):
     )
 
     _payment_split = column_property(
-        select([Split.guid]).\
-        where(Split.lot_guid==post_lot_guid).\
-        where(Split.action=='Payment')
+        select(Split.guid).
+        where(Split.lot_guid==post_lot_guid).
+        where(Split.action=='Payment').
+        scalar_subquery()
     )
 
     is_paid = column_property(
-        exists().\
-        where(Split.lot_guid==post_lot_guid).\
+        exists().
+        where(Split.lot_guid==post_lot_guid).
         where(Split.action=='Payment')
     )
 
     _job_owner_type = column_property(
-        select([Job.owner_type]).\
-        where(Job.guid==owner_guid).\
-        correlate_except(Job))
+        select(Job.owner_type).
+        where(Job.guid==owner_guid).
+        correlate_except(Job).
+        scalar_subquery()
+    )
 
     _end_owner_type = column_property(
         case(
-            [
-                (owner_type == text('3'), _job_owner_type),
-            ],
+            (owner_type == text('3'), _job_owner_type),
             else_=owner_type
         )
     )
@@ -575,10 +576,8 @@ class InvoiceBase(DeclarativeBaseGuid):
     from ..sa_extra import tz, utc
     is_posted = column_property(
         case(
-            [
-                (date_posted == None, False),
-                (date_posted == utc.localize(datetime.datetime(1970, 1, 1, 0, 0, 0)).astimezone(tz), False),
-            ],
+            (date_posted == None, False),
+            (date_posted == utc.localize(datetime.datetime(1970, 1, 1, 0, 0, 0)).astimezone(tz), False),
             else_=True
         )
     )

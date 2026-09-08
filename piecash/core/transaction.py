@@ -522,6 +522,9 @@ class Lot(DeclarativeBaseGuid):
     def __init__(self, title, account, notes="", splits=None, is_closed=0):
         self.title = title
         self.account = account
+        if account is not None and account.book is not None:
+            # Session(future=True) / SQLAlchemy 2.x: attach Lot so self.book works
+            account.book.add(self)
         self.notes = notes
         if splits:
             self.splits[:] = splits
@@ -571,7 +574,10 @@ class Lot(DeclarativeBaseGuid):
             split.quantity = -self.quantity
 
             # Slots - set date and link the peer splits to each other.
-            self.book.flush()
+            book = self.book or (self.account.book if self.account else None)
+            if book is None and split.account is not None:
+                book = split.account.book
+            book.flush()
 
             # Set the slot for date if not already set
             try:
