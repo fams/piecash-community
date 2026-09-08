@@ -3,7 +3,7 @@ import datetime
 from enum import Enum
 
 from sqlalchemy import Column, INTEGER, BIGINT, VARCHAR, ForeignKey, select, case, text, event, exists
-from sqlalchemy.orm import composite, relation, column_property
+from sqlalchemy.orm import composite, relationship, column_property
 from sqlalchemy.orm.attributes import get_history
 from sqlalchemy.ext.hybrid import hybrid_property
 from decimal import Decimal
@@ -47,8 +47,8 @@ class Job(DeclarativeBaseGuid):
 
     # relation definitions
     # todo: owner_guid/type links to Vendor or Customer
-    _customer = relation(Customer, uselist=False, primaryjoin='Customer.guid == Job.owner_guid', foreign_keys=Customer.guid)
-    _vendor = relation(Vendor, uselist=False, primaryjoin='Vendor.guid == Job.owner_guid', foreign_keys=Vendor.guid)
+    _customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == Job.owner_guid', foreign_keys=Customer.guid)
+    _vendor = relationship(Vendor, uselist=False, primaryjoin='Vendor.guid == Job.owner_guid', foreign_keys=Vendor.guid)
 
     def __init__(self, name, owner, reference="", active=1, rate=0):
         #At least a name and owner need to be specified
@@ -114,13 +114,13 @@ class Billterm(DeclarativeBaseGuid):
     cutoff = Column("cutoff", INTEGER())
 
     # relation definitions
-    children = relation(
+    children = relationship(
         "Billterm",
         back_populates="parent",
         cascade="all, delete-orphan",
         collection_class=CallableList,
     )
-    parent = relation(
+    parent = relationship(
         "Billterm",
         back_populates="children",
         remote_side=guid,
@@ -221,13 +221,13 @@ class Entry(DeclarativeBaseGuid):
     _order_guid = Column("order_guid", VARCHAR(length=32), ForeignKey("orders.guid"))
 
     # relation definitions
-    order = relation("Order", back_populates="entries")
-    invoice = relation("InvoiceBase", foreign_keys=[invoice_guid], back_populates="_invoice_entries")
-    bill = relation("InvoiceBase", foreign_keys=[bill_guid], back_populates="_bill_entries")
-    _i_taxtable = relation("Taxtable", foreign_keys=[_i_taxtable_guid])
-    _b_taxtable = relation("Taxtable", foreign_keys=[_b_taxtable_guid])
-    _i_account = relation("Account", foreign_keys=[_i_acct])
-    _b_account = relation("Account", foreign_keys=[_b_acct])
+    order = relationship("Order", back_populates="entries")
+    invoice = relationship("InvoiceBase", foreign_keys=[invoice_guid], back_populates="_invoice_entries")
+    bill = relationship("InvoiceBase", foreign_keys=[bill_guid], back_populates="_bill_entries")
+    _i_taxtable = relationship("Taxtable", foreign_keys=[_i_taxtable_guid])
+    _b_taxtable = relationship("Taxtable", foreign_keys=[_b_taxtable_guid])
+    _i_account = relationship("Account", foreign_keys=[_i_acct])
+    _b_account = relationship("Account", foreign_keys=[_b_acct])
 
     def __str__(self):
         return "Entry<{}>".format(self.description)
@@ -524,13 +524,13 @@ class InvoiceBase(DeclarativeBaseGuid):
 
     # relation definitions
     # todo: check all relations and understanding of types...
-    term = relation("Billterm")
-    currency = relation("Commodity")
-    post_account = relation("Account")
-    post_lot = relation("Lot")
-    post_txn = relation("Transaction")
+    term = relationship("Billterm")
+    currency = relationship("Commodity")
+    post_account = relationship("Account")
+    post_lot = relationship("Lot")
+    post_txn = relationship("Transaction")
 
-    _invoice_entries = relation(
+    _invoice_entries = relationship(
         "Entry",
         back_populates="invoice",
         cascade="all, delete-orphan",
@@ -538,7 +538,7 @@ class InvoiceBase(DeclarativeBaseGuid):
         foreign_keys=Entry.invoice_guid
     )
 
-    _bill_entries = relation(
+    _bill_entries = relationship(
         "Entry",
         back_populates="bill",
         cascade="all, delete-orphan",
@@ -588,12 +588,12 @@ class InvoiceBase(DeclarativeBaseGuid):
         "polymorphic_on": _end_owner_type,
     }
 
-    job = relation(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.owner_guid', foreign_keys=Job.guid)
-    _customer = relation(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.owner_guid', foreign_keys=Customer.guid)
-    _vendor = relation(Vendor, uselist=False, primaryjoin='Vendor.guid == InvoiceBase.owner_guid', foreign_keys=Vendor.guid)
-    _employee = relation(Employee, uselist=False, primaryjoin='Employee.guid == InvoiceBase.owner_guid', foreign_keys=Employee.guid)
-    _billto_customer = relation(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.billto_guid', foreign_keys=Customer.guid)
-    _billto_job = relation(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.billto_guid', foreign_keys=Job.guid)
+    job = relationship(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.owner_guid', foreign_keys=Job.guid)
+    _customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.owner_guid', foreign_keys=Customer.guid)
+    _vendor = relationship(Vendor, uselist=False, primaryjoin='Vendor.guid == InvoiceBase.owner_guid', foreign_keys=Vendor.guid)
+    _employee = relationship(Employee, uselist=False, primaryjoin='Employee.guid == InvoiceBase.owner_guid', foreign_keys=Employee.guid)
+    _billto_customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.billto_guid', foreign_keys=Customer.guid)
+    _billto_job = relationship(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.billto_guid', foreign_keys=Job.guid)
 
     @property
     def entries(self):
@@ -971,7 +971,7 @@ class Order(DeclarativeBaseGuid):
 
     # relation definitions
     # todo: owner_guid/type links to Vendor or Customer
-    entries = relation(
+    entries = relationship(
         "Entry",
         back_populates="order",
         cascade="all, delete-orphan",
