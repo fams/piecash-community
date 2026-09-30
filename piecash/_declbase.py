@@ -28,6 +28,9 @@ class DeclarativeBaseGuid(DictWrapper, DeclarativeBase):
             primaryjoin=foreign(Slot.obj_guid) == cls.guid,
             cascade="all, delete-orphan",
             collection_class=CallableList,
+            # associação polimórfica: todo objeto guarda KVP em slots.obj_guid;
+            # a sobreposição entre as classes é intencional
+            overlaps="slots,parent",
         )
 
         return rel

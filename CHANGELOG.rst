@@ -31,6 +31,11 @@ Version 1.2.2 (unreleased)
 - warn and allow inferring default currency when root account has none (fix #251; GnuCash-compatible fallback via first top-level INCOME)
 - splits_df: tolerate splits with missing account instead of crashing (fix #211)
 - Compat: allow registry() without _bind for SQLAlchemy 2.0
+- setup.py: accept SQLAlchemy 1.4 and 2.0 (``SQLAlchemy>=1.4, <2.1``); installing no longer needs ``--no-deps``
+- declare intentional overlaps of polymorphic associations (``slots.obj_guid``, ``recurrences.obj_guid``,
+  ``jobs.owner_guid``, invoice owner/billto) with ``overlaps=``: configuring the mappers no longer emits
+  25 SAWarnings on SA 1.4/2.0 (test: tests/test_mappers.py)
+- Job._customer / Job._vendor: filter by ``owner_type`` like Customer/Vendor.jobs, and mark them viewonly
 
 Version 1.2.1 (2024-07-14)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

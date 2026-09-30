@@ -273,7 +273,8 @@ class SlotFrame(DictWrapper, Slot):
         cascade="all, delete-orphan",
         collection_class=CallableList,
         single_parent=True,
-        backref=backref("parent", remote_side=guid_val),
+        backref=backref("parent", remote_side=guid_val, overlaps="slots"),
+        overlaps="slots,parent",
     )
 
     @property

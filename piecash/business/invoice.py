@@ -47,8 +47,14 @@ class Job(DeclarativeBaseGuid):
 
     # relation definitions
     # todo: owner_guid/type links to Vendor or Customer
-    _customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == Job.owner_guid', foreign_keys=Customer.guid)
-    _vendor = relationship(Vendor, uselist=False, primaryjoin='Vendor.guid == Job.owner_guid', foreign_keys=Vendor.guid)
+    # só leitura (ver `owner`); filtrados por owner_type como os Customer/Vendor.jobs
+    # (2 = Customer, 4 = Vendor — ver PersonType em person.py)
+    _customer = relationship(Customer, uselist=False, viewonly=True,
+                             primaryjoin='and_(Customer.guid == Job.owner_guid, Job.owner_type == 2)',
+                             foreign_keys=Customer.guid)
+    _vendor = relationship(Vendor, uselist=False, viewonly=True,
+                           primaryjoin='and_(Vendor.guid == Job.owner_guid, Job.owner_type == 4)',
+                           foreign_keys=Vendor.guid)
 
     def __init__(self, name, owner, reference="", active=1, rate=0):
         #At least a name and owner need to be specified
@@ -587,12 +593,12 @@ class InvoiceBase(DeclarativeBaseGuid):
         "polymorphic_on": _end_owner_type,
     }
 
-    job = relationship(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.owner_guid', foreign_keys=Job.guid)
-    _customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.owner_guid', foreign_keys=Customer.guid)
-    _vendor = relationship(Vendor, uselist=False, primaryjoin='Vendor.guid == InvoiceBase.owner_guid', foreign_keys=Vendor.guid)
-    _employee = relationship(Employee, uselist=False, primaryjoin='Employee.guid == InvoiceBase.owner_guid', foreign_keys=Employee.guid)
-    _billto_customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.billto_guid', foreign_keys=Customer.guid)
-    _billto_job = relationship(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.billto_guid', foreign_keys=Job.guid)
+    job = relationship(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.owner_guid', foreign_keys=Job.guid, overlaps="job,_customer,_vendor,_employee,_billto_customer,_billto_job,jobs,invoices")
+    _customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.owner_guid', foreign_keys=Customer.guid, overlaps="job,_customer,_vendor,_employee,_billto_customer,_billto_job,jobs,invoices")
+    _vendor = relationship(Vendor, uselist=False, primaryjoin='Vendor.guid == InvoiceBase.owner_guid', foreign_keys=Vendor.guid, overlaps="job,_customer,_vendor,_employee,_billto_customer,_billto_job,jobs,invoices")
+    _employee = relationship(Employee, uselist=False, primaryjoin='Employee.guid == InvoiceBase.owner_guid', foreign_keys=Employee.guid, overlaps="job,_customer,_vendor,_employee,_billto_customer,_billto_job,jobs,invoices")
+    _billto_customer = relationship(Customer, uselist=False, primaryjoin='Customer.guid == InvoiceBase.billto_guid', foreign_keys=Customer.guid, overlaps="job,_customer,_vendor,_employee,_billto_customer,_billto_job,jobs,invoices")
+    _billto_job = relationship(Job, uselist=False, primaryjoin='Job.guid == InvoiceBase.billto_guid', foreign_keys=Job.guid, overlaps="job,_customer,_vendor,_employee,_billto_customer,_billto_job,jobs,invoices")
 
     @property
     def entries(self):

@@ -478,6 +478,7 @@ class ScheduledTransaction(DeclarativeBaseGuid):
         primaryjoin=guid == foreign(Recurrence.obj_guid),
         cascade="all, delete-orphan",
         uselist=False,
+        overlaps="recurrence",  # compartilhada com Budget (polimórfica)
     )
 
     def __str__(self):

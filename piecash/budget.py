@@ -43,6 +43,7 @@ class Budget(DeclarativeBaseGuid):
         primaryjoin=foreign(Recurrence.obj_guid) == guid,
         cascade="all, delete-orphan",
         uselist=False,
+        overlaps="recurrence",  # compartilhada com ScheduledTransaction (polimórfica)
     )
 
     amounts = relationship(

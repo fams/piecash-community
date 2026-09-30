@@ -155,6 +155,8 @@ class Person:
                 ),
                 cascade="all, delete-orphan",
                 collection_class=CallableList,
+                # cada classe filtra por owner_type (associação polimórfica)
+                overlaps="jobs",
             )
 
             @event.listens_for(cls.jobs, "append")
