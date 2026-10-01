@@ -629,6 +629,37 @@ class Book(DeclarativeBaseGuid):
 
         return accounts, splits
 
+    def account_balances(self, at_date=None, natural_sign=True):
+        """
+        Balance of every account of the book, computed in one SQL query instead of one
+        :meth:`piecash.core.account.Account.get_balance` call (and many queries) per account.
+
+        Each balance is the sum of the quantities of the account's own splits, in the
+        account's commodity (no recursion, no price conversion) - the same number as
+        ``account.get_balance(recurse=False, natural_sign=natural_sign, at_date=at_date)``.
+
+        :param at_date: :class:`datetime.date`, only transactions posted on or before this day count
+        :param natural_sign: revert the sign of LIABILITY, PAYABLE, CREDIT, INCOME and EQUITY accounts (default True)
+        :return: ``{account: Decimal}``, one entry per account (root excluded)
+        """
+        from .bulk import account_balances
+
+        return account_balances(self, at_date=at_date, natural_sign=natural_sign)
+
+    def slot_values(self, path, of=None):
+        """
+        Value of a key-value-pair slot for every object that has it, read in one query.
+
+        ``path`` is the slash-separated path used with ``obj[path]``, e.g. ``"user-keys/tags"``.
+
+        :param path: slot name or ``frame/name`` path
+        :param of: optional mapped class (e.g. :class:`piecash.core.transaction.Split`) to restrict the objects
+        :return: ``{object guid: value}``; objects without the slot are absent
+        """
+        from .bulk import slot_values
+
+        return slot_values(self, path, of=of)
+
     def splits_df(self, additional_fields=None):
         """
         Return a pandas DataFrame with all splits (:class:`piecash.core.commodity.Split`) from the book

@@ -53,6 +53,7 @@ class SlotType(types.TypeDecorator):
     """Used to customise the DateTime type for sqlite (ie without the separators as in gnucash"""
 
     impl = INTEGER
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is not None:

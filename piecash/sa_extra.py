@@ -130,6 +130,7 @@ class _DateTime(types.TypeDecorator):
     """Used to customise the DateTime type for sqlite (ie without the separators as in gnucash"""
 
     impl = types.TypeEngine
+    cache_ok = True
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "sqlite":
@@ -196,6 +197,7 @@ class _Date(types.TypeDecorator):
     """Used to customise the DateTime type for sqlite (ie without the separators as in gnucash"""
 
     impl = types.TypeEngine
+    cache_ok = True
     is_sqlite = False
 
     def load_dialect_impl(self, dialect):
