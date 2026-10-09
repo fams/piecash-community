@@ -1,6 +1,7 @@
 import datetime
 import locale
 import os
+import pathlib
 import shutil
 import socket
 import warnings
@@ -243,6 +244,21 @@ def build_uri(
     return uri_conn
 
 
+def _readonly_sqlite_uri(uri_conn):
+    """For a SQLite file, the URI that makes SQLite itself open it read-only (``mode=ro``).
+
+    Without it a "readonly" book is only protected against ``session.commit()``: the file is
+    still opened read-write, so merely reading it rolls back a hot journal left by an
+    interrupted write (and destroys the evidence of that write).
+    """
+    prefix = "sqlite:///"
+    if not uri_conn.startswith(prefix) or uri_conn.startswith(prefix + "file:"):
+        return uri_conn
+    path, _, query = uri_conn[len(prefix) :].partition("?")
+    uri = "{}{}?mode=ro&uri=true".format(prefix, pathlib.Path(os.path.abspath(path)).as_uri())
+    return uri + ("&" + query if query else "")
+
+
 def create_book(
     sqlite_file=None,
     uri_conn=None,
@@ -367,6 +383,7 @@ def open_book(
     sqlite_file=None,
     uri_conn=None,
     readonly=True,
+    strict_readonly=False,
     open_if_lock=False,
     do_backup=True,
     db_type=None,
@@ -384,6 +401,10 @@ def open_book(
     :param str sqlite_file: a path to an sqlite3 file (only used if uri_conn is None)
     :param str uri_conn: a sqlalchemy connection string
     :param bool readonly: open the file as readonly (useful to play with and avoid any unwanted save)
+    :param bool strict_readonly: with readonly=True on a SQLite file, make SQLite itself open the file
+        read-only (``mode=ro``): nothing can be flushed to it, and reading does not roll back a hot journal
+        left by an interrupted write. Default False: only ``commit`` is blocked, changes can still be
+        flushed to play with the book.
     :param bool open_if_lock: open the file even if it is locked by another user
         (using open_if_lock=True with readonly=False is not recommended)
     :param bool do_backup: do a backup if the file written in RW (i.e. readonly=False)
@@ -428,7 +449,9 @@ def open_book(
             "use the argument check_exists=False.".format(uri_conn)
         )
 
-    engine = create_piecash_engine(uri_conn, **kwargs)
+    if strict_readonly and not readonly:
+        raise ValueError("strict_readonly=True requires readonly=True")
+    engine = create_piecash_engine(_readonly_sqlite_uri(uri_conn) if strict_readonly else uri_conn, **kwargs)
 
     # backup database if readonly=False and do_backup=True
     if not readonly and do_backup:

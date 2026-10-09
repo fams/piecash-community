@@ -11,6 +11,14 @@ Version 1.2.3 (unreleased)
 - mark the stateless column types ``SlotType``, ``_DateTime`` and ``_Date`` as ``cache_ok = True`` (SQLAlchemy 2.0 stopped
   caching statements that use them and warned)
 
+Version 1.2.4 (2026-10-08)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- add ``Book.account_rows``, ``Book.transaction_rows`` and ``Book.split_rows``: the whole book (or one account /
+  one period) as plain rows in one query each, amounts as the stored integers and ``post_date`` as the stored day
+- add ``open_book(..., strict_readonly=True)``: SQLite opens the file itself read-only (``mode=ro``), so nothing
+  can be flushed and reading does not roll back a hot journal. Default unchanged
+
 Version 1.2.3 (2026-10-08)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -660,6 +660,42 @@ class Book(DeclarativeBaseGuid):
 
         return slot_values(self, path, of=of)
 
+    def account_rows(self):
+        """
+        Every account as a plain row ``(guid, name, parent_guid, type, commodity_guid, mnemonic)``, in one query.
+
+        :return: list of :class:`piecash.core.bulk.AccountRow` (root accounts included)
+        """
+        from .bulk import account_rows
+
+        return account_rows(self)
+
+    def transaction_rows(self, from_date=None, to_date=None):
+        """
+        Every transaction as a plain row ``(guid, post_date, description, currency_guid, num)``, in one query.
+
+        :param from_date: :class:`datetime.date`, first posting day to keep
+        :param to_date: :class:`datetime.date`, last posting day to keep
+        :return: list of :class:`piecash.core.bulk.TransactionRow`; ``post_date`` is the day as stored
+        """
+        from .bulk import transaction_rows
+
+        return transaction_rows(self, from_date=from_date, to_date=to_date)
+
+    def split_rows(self, account=None, from_date=None, to_date=None):
+        """
+        Every split joined to its transaction as a plain row, in one query, instead of one object
+        per split and one query per transaction.
+
+        :param account: :class:`piecash.core.account.Account` or guid, only the splits of this account
+        :param from_date: :class:`datetime.date`, first posting day to keep
+        :param to_date: :class:`datetime.date`, last posting day to keep
+        :return: list of :class:`piecash.core.bulk.SplitRow` with the amounts as stored integers
+        """
+        from .bulk import split_rows
+
+        return split_rows(self, account=account, from_date=from_date, to_date=to_date)
+
     def splits_df(self, additional_fields=None):
         """
         Return a pandas DataFrame with all splits (:class:`piecash.core.commodity.Split`) from the book

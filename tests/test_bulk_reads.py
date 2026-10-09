@@ -123,3 +123,89 @@ def test_bulk_reads_do_not_warn(book_complex):
         book_complex.account_balances()
         book_complex.account_balances(at_date=date(2020, 1, 1))
         book_complex.slot_values("user-keys/tags", of=Split)
+
+
+def test_account_rows_equals_orm(book_complex):
+    rows = {r.guid: r for r in book_complex.account_rows()}
+    contas = book_complex.session.query(Account).all()
+    assert set(rows) == {a.guid for a in contas}
+    for a in contas:
+        r = rows[a.guid]
+        assert (r.name, r.parent_guid, r.type, r.commodity_guid) == (a.name, a.parent_guid, a.type, a.commodity_guid)
+        assert r.mnemonic == (a.commodity.mnemonic if a.commodity else None)
+    assert book_complex.root_account.guid in rows
+
+
+def test_transaction_rows_equals_orm(book_complex):
+    rows = {r.guid: r for r in book_complex.transaction_rows()}
+    assert set(rows) == {t.guid for t in book_complex.transactions}
+    for t in book_complex.transactions:
+        r = rows[t.guid]
+        assert (r.post_date, r.description, r.currency_guid, r.num) == (t.post_date, t.description, t.currency_guid, t.num)
+
+
+def test_split_rows_equals_orm(book_complex):
+    rows = {r.guid: r for r in book_complex.split_rows()}
+    assert set(rows) == {s.guid for s in book_complex.splits}
+    for s in book_complex.splits:
+        r = rows[s.guid]
+        assert (r.transaction_guid, r.account_guid, r.memo, r.reconcile_state) == (
+            s.transaction_guid, s.account_guid, s.memo, s.reconcile_state)
+        assert (r.post_date, r.description) == (s.transaction.post_date, s.transaction.description)
+        assert Decimal(r.value_num) / Decimal(r.value_denom) == s.value
+        assert Decimal(r.quantity_num) / Decimal(r.quantity_denom) == s.quantity
+        assert all(isinstance(n, int) for n in (r.value_num, r.value_denom, r.quantity_num, r.quantity_denom))
+
+
+def test_split_rows_filters(book_complex):
+    todas = book_complex.split_rows()
+    conta = next(a for a in book_complex.accounts if a.splits)
+    esperado = {s.guid for s in conta.splits}
+    assert {r.guid for r in book_complex.split_rows(account=conta)} == esperado
+    assert {r.guid for r in book_complex.split_rows(account=conta.guid)} == esperado
+    datas = sorted({r.post_date for r in todas})
+    de, ate = datas[len(datas) // 3], datas[2 * len(datas) // 3]
+    assert {r.guid for r in book_complex.split_rows(from_date=de, to_date=ate)} == {
+        r.guid for r in todas if de <= r.post_date <= ate}
+    assert {r.guid for r in book_complex.transaction_rows(from_date=de, to_date=ate)} == {
+        r.guid for r in book_complex.transaction_rows() if de <= r.post_date <= ate}
+    assert book_complex.split_rows(from_date=date(2100, 1, 1)) == []
+
+
+def test_row_readers_keep_the_stored_day(tmp_path):
+    """post_date is the day as stored (UTC), not converted to the local timezone."""
+    import shutil, sqlite3, os, piecash
+    origem = os.path.join(os.path.dirname(__file__), "..", "gnucash_books", "complex_sample.gnucash")
+    livro = str(tmp_path / "c.gnucash")
+    shutil.copyfile(origem, livro)
+    con = sqlite3.connect(livro)
+    guid = con.execute("SELECT guid FROM transactions LIMIT 1").fetchone()[0]
+    con.execute("UPDATE transactions SET post_date='2020-03-10 00:30:00' WHERE guid=?", (guid,))
+    con.execute("DELETE FROM gnclock")
+    con.commit(); con.close()
+    with piecash.open_book(livro, readonly=True) as book:
+        assert {r.guid: r.post_date for r in book.transaction_rows()}[guid] == date(2020, 3, 10)
+        assert {r.post_date for r in book.split_rows() if r.transaction_guid == guid} == {date(2020, 3, 10)}
+        assert [r.guid for r in book.transaction_rows(from_date=date(2020, 3, 10), to_date=date(2020, 3, 10))] == [guid]
+
+
+def test_strict_readonly_opens_the_sqlite_file_readonly(tmp_path):
+    """strict_readonly=True cannot write the file at all (nor roll a hot journal back)."""
+    import shutil, os, piecash
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+    origem = os.path.join(os.path.dirname(__file__), "..", "gnucash_books", "complex_sample.gnucash")
+    livro = str(tmp_path / "com espaço & acento é.gnucash")
+    shutil.copyfile(origem, livro)
+    antes = open(livro, "rb").read()
+    with piecash.open_book(livro, readonly=True, strict_readonly=True, open_if_lock=True) as book:
+        assert len(book.accounts) > 0
+        with pytest.raises(OperationalError):
+            book.session.execute(text("UPDATE accounts SET name = name || 'x'"))
+    assert open(livro, "rb").read() == antes
+    with pytest.raises(ValueError):
+        piecash.open_book(livro, readonly=False, strict_readonly=True, open_if_lock=True, do_backup=False)
+    # read-write still works
+    with piecash.open_book(livro, readonly=False, open_if_lock=True, do_backup=False) as book:
+        book.session.execute(text("UPDATE accounts SET name = name"))
+        book.save()
