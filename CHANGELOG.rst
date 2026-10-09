@@ -11,7 +11,13 @@ Version 1.2.3 (unreleased)
 - mark the stateless column types ``SlotType``, ``_DateTime`` and ``_Date`` as ``cache_ok = True`` (SQLAlchemy 2.0 stopped
   caching statements that use them and warned)
 
-Version 1.2.2 (unreleased)
+Version 1.2.3 (2026-10-08)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- add ``Book.account_balances`` and ``Book.slot_values``: whole-book reads in one or two SQL queries
+  (balance of every account; one KVP slot for every object), instead of several queries per object
+
+Version 1.2.2 (2026-09-30)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - support locale currency setting (fix #174)
