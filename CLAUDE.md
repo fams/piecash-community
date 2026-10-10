@@ -48,7 +48,7 @@ CI (`.github/workflows/github-actions.yml`) runs Python 3.8–3.12 under `LC_ALL
 
 **Validation model** (`piecash/core/book.py`): on commit, each new/dirty/deleted object yields, through `object_to_validate(change)`, the objects that must be revalidated. For example, a Split yields its Transaction and Lot. The book then calls `.validate()` on each of those. Most GnuCash invariants (balanced transactions, currency rules, immutable fields) are enforced in `validate()`, not in setters, and raise `GncValidationError`/`GncImbalanceError`. `on_book_add()` is the hook for initializing defaults when an object joins a book.
 
-**Bulk readers** (`piecash/core/bulk.py`): `account_balances`, `slot_values`, `account_rows`, `transaction_rows` and `split_rows` answer whole-book questions in one or two SQL queries and return plain values, instead of several ORM queries per object. They are exposed as thin `Book` methods that import `bulk` lazily. Row readers return amounts as the stored `num`/`denom` integers and `post_date` as the stored day. `tests/test_bulk_reads.py` checks each of them against the ORM result.
+**Bulk readers** (`piecash/core/bulk.py`): `account_balances`, `slot_values`, `account_rows`, `transaction_rows` and `split_rows` answer whole-book questions in one or two SQL queries and return plain values, instead of several ORM queries per object. They are exposed as thin `Book` methods that import `bulk` lazily. Row readers return amounts as the stored `num`/`denom` integers and `post_date` as the stored day. A downstream application compares these values byte for byte, so that format is a compatibility contract: do not change it without a release note. `tests/test_bulk_reads.py` checks each of them against the ORM result.
 
 **SA 2.0 / `future=True` gotcha**: many-to-one assignment no longer cascades a new child into the session. Newly created children such as `Lot` or `TaxtableEntry` must be `book.add()`-ed explicitly (see commit 77a45cc). Use `select()`/`case()` in 2.0 call style.
 
@@ -57,3 +57,11 @@ CI (`.github/workflows/github-actions.yml`) runs Python 3.8–3.12 under `LC_ALL
 ## Release
 
 Bump `piecash/metadata.py`, update `CHANGELOG.rst`, then tag `vX.Y.Z`. Work goes through `feature/*` branches fast-forwarded into `master`. See `DEVELOPER.rst`.
+
+Downstream consumers pin this fork by commit SHA, not by tag, so a new release reaches them only when they move the SHA: announce every release. At least one of them runs its test suite with `SAWarning` as an error, so the library must import and query without SQLAlchemy warnings.
+
+## Repository rules
+
+- This fork is public: never commit personal data (real books, account names, amounts, credentials). Use the synthetic books in `tests/books` and `gnucash_books`.
+- Check the upstream from time to time for changes worth merging. The active line is `gorf/piecash`; the original `sdementen/piecash` has limited maintenance. Last checked: 2026-10-08.
+- Several sessions share this checkout. Keep the main checkout on a clean `master` and develop in a separate `git worktree`.

@@ -1,16 +1,6 @@
 What's new
 ==========
 
-Version 1.2.3 (unreleased)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- add ``Book.account_balances(at_date=None, natural_sign=True)``: the balance of every account in one grouped SQL
-  query (same value as ``get_balance(recurse=False)`` per account; ~0.1 s instead of seconds on a book with years of history)
-- add ``Book.slot_values(path, of=None)``: the value of a key-value-pair slot (e.g. ``"user-keys/tags"``) for every object
-  that has it, resolved with chained joins in one query (reading it split by split through the ORM took 24 s for 725 tags)
-- mark the stateless column types ``SlotType``, ``_DateTime`` and ``_Date`` as ``cache_ok = True`` (SQLAlchemy 2.0 stopped
-  caching statements that use them and warned)
-
 Version 1.2.4 (2026-10-08)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,8 +12,12 @@ Version 1.2.4 (2026-10-08)
 Version 1.2.3 (2026-10-08)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- add ``Book.account_balances`` and ``Book.slot_values``: whole-book reads in one or two SQL queries
-  (balance of every account; one KVP slot for every object), instead of several queries per object
+- add ``Book.account_balances(at_date=None, natural_sign=True)``: the balance of every account in one grouped SQL
+  query (same value as ``get_balance(recurse=False)`` per account; ~0.1 s instead of seconds on a book with years of history)
+- add ``Book.slot_values(path, of=None)``: the value of a key-value-pair slot (e.g. ``"user-keys/tags"``) for every object
+  that has it, resolved with chained joins in one query (reading it split by split through the ORM took 24 s for 725 tags)
+- mark the stateless column types ``SlotType``, ``_DateTime`` and ``_Date`` as ``cache_ok = True`` (SQLAlchemy 2.0 stopped
+  caching statements that use them and warned)
 
 Version 1.2.2 (2026-09-30)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
