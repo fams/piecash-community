@@ -33,7 +33,8 @@ class TestSession_create_book(object):
                 name="léviö",
                 type="ASSET",
             )
-            assert str(b.uri) == build_uri(**book_db_config)
+            # SQLAlchemy 2.0 masks the password in str(url) ("***"): compare the full rendering
+            assert b.uri.render_as_string(hide_password=False) == build_uri(**book_db_config)
             b.save()
 
         # reopen the DB except if sqlite_file is None
