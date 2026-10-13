@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from decimal import Decimal
 
 import piecash
 from test_helper import book_complex
@@ -50,3 +51,17 @@ def test_short_account_names_raise_error_when_duplicate_account_names(book_compl
         "You cannot use the 'short_account_names' option.",
     ):
         piecash.ledger(book_complex, short_account_names=True)
+
+
+def test_format_currency_in_the_c_locale_falls_back_to_en_us(monkeypatch):
+    """LANG=C.UTF-8 (containers, CI images) made the locale-aware export raise UnknownLocaleError("unknown locale 'c'")."""
+    import importlib
+    import locale
+
+    ledger = importlib.import_module("piecash.ledger")  # `piecash.ledger` the package attribute is a function
+
+    if not ledger.BABEL_AVAILABLE:
+        pytest.skip("babel is not installed")
+    for name in ("C", "POSIX", None):
+        monkeypatch.setattr(locale, "getdefaultlocale", lambda *a, **k: (name, "UTF-8"))
+        assert ledger.format_currency(Decimal("1234.5"), 2, "EUR", locale=True) == "€1,234.50"

@@ -98,11 +98,16 @@ class TestSession_create_book(object):
 def locale_ctx(l):
     _l = locale.getlocale()
 
-    locale.setlocale(locale.LC_ALL, l)
+    try:
+        locale.setlocale(locale.LC_ALL, l)
+    except locale.Error:
+        # the locale is not installed on this machine (a minimal image has only C/POSIX): nothing to check
+        pytest.skip("locale {} is not installed".format(l))
 
-    yield
-
-    locale.setlocale(locale.LC_ALL, _l)
+    try:
+        yield
+    finally:
+        locale.setlocale(locale.LC_ALL, _l)
 
 
 if sys.platform == "win32":
@@ -116,7 +121,8 @@ else:
         "fr_FR.UTF-8": "EUR",
     }
 locale.setlocale(locale.LC_ALL, '')
-locales[locale.setlocale(locale.LC_ALL, '')] = locale.localeconv()['int_curr_symbol']
+# the locale of the machine itself: a locale without a currency (C/POSIX) gives the documented default, EUR
+locales[locale.setlocale(locale.LC_ALL, '')] = locale.localeconv()['int_curr_symbol'].strip() or "EUR"
 
 
 @pytest.fixture(params=locales)

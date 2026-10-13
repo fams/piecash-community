@@ -1,6 +1,14 @@
 What's new
 ==========
 
+Version 1.2.6 (2026-10-13)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- fix: the locale-aware ledger export (``locale=True``) raised ``UnknownLocaleError("unknown locale 'c'")`` under the
+  ``C``/``POSIX`` locale (``LANG=C.UTF-8``, the default in containers and CI images); it now formats as ``en_US`` there
+- tests: the locale tests skip a locale that is not installed on the machine instead of failing, and expect the
+  documented default (``EUR``) for a machine locale without a currency. The suite passes on a machine with only C/POSIX
+
 Version 1.2.5 (2026-10-13)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

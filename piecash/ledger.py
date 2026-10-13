@@ -78,6 +78,12 @@ def format_currency(
                 f"You must install babel ('pip install babel') to export to ledger in "
                 f"your locale '{loc}'"
             )
+        # the "C"/"POSIX" locale (the default in containers and CI images, e.g. LANG=C.UTF-8) is not a locale
+        # babel knows: it raised UnknownLocaleError("unknown locale 'c'"). Format as en_US there
+        try:
+            babel.Locale.parse(loc)
+        except (babel.UnknownLocaleError, ValueError):
+            loc = "en_US"
         return babel.numbers.format_currency(
             amount,
             currency,
