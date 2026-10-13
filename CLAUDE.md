@@ -20,7 +20,7 @@ flake8 --ignore=E126,E121 --max-line-length=99    # lint config from setup.py (C
 cd docs && make html                              # docs (needs .[doc])
 ```
 
-CI (`.github/workflows/github-actions.yml`) runs Python 3.8–3.12 under `LC_ALL=fr_FR.UTF-8`, with Postgres and MySQL services. The locale matters: ledger/currency formatting tests have been locale-sensitive in the past. Locally the suite also passes with only the C/POSIX locale installed (tests for a locale that is not installed are skipped); the `fr_FR` cases run only where that locale exists. GitHub Actions has never run on this fork (0 runs: workflows of a fork stay off until enabled in the repository settings), so the local runs on SA 1.4 and 2.0 (sqlite only) are the only evidence until it is enabled.
+CI (`.github/workflows/github-actions.yml`) runs Python 3.8–3.12 under `LC_ALL=fr_FR.UTF-8`, with Postgres and MySQL services. The locale matters: ledger/currency formatting tests have been locale-sensitive in the past. Locally the suite also passes with only the C/POSIX locale installed (tests for a locale that is not installed are skipped); the `fr_FR` cases run only where that locale exists. Until 2026-10-13 GitHub Actions had never run on this fork (0 runs); the workflow now also accepts a manual run (`gh workflow run CI`).
 
 `setup.py` accepts `SQLAlchemy>=1.4, <2.1` (since 1.2.2): the same code runs on SA 1.4 and 2.0. Run the suite on both before releasing.
 
