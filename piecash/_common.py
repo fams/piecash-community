@@ -1,6 +1,6 @@
 import locale
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy import Column, VARCHAR, INTEGER, cast, Float
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -113,7 +113,9 @@ def hybrid_property_gncnumeric(num_col, denom_col):
             if denom_basis is not None:
                 denom = denom_basis
 
-            num = int(d * denom)
+            # round half up, as GnuCash does when it converts an amount to the smallest unit of a currency
+            # (truncating turned 1.999 into 1.99 once the scale of the split was known)
+            num = int((d * denom).quantize(Decimal(1), rounding=ROUND_HALF_UP))
             if not (
                 (-MAX_NUMBER < num < MAX_NUMBER) and (-MAX_NUMBER < denom < MAX_NUMBER)
             ):

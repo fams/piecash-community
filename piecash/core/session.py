@@ -488,7 +488,8 @@ def open_book(
         else:
             raise ValueError("Unsupported table versions")
         assert version == "3.0" or version == "3.7" or version == "4.1", (
-            "This version of piecash only support books from gnucash (3.0|3.7|4.1) "
+            # GnuCash 5.x kept the table layout of 4.1 (only the program number differs, and it is not compared)
+            "This version of piecash only support books from gnucash (3.0|3.7|4.1, and 5.x which kept the 4.1 layout) "
             "which is not the case for {}".format(uri_conn)
         )
 

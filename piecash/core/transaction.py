@@ -4,6 +4,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from sqlalchemy import Column, VARCHAR, ForeignKey, BIGINT, INTEGER, Index
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import relationship, validates, foreign, object_session
 from sqlalchemy.orm.base import NEVER_SET
 
@@ -143,6 +144,10 @@ class Split(DeclarativeBaseGuid):
     def object_to_validate(self, change):
         yield self
         if self.transaction:
+            if change[-1] == "deleted":
+                # a deleted split is not validated itself, but removing it changes the balance of its
+                # transaction as much as changing its value does (it went unchecked before)
+                self.transaction._recalculate_balance = True
             yield self.transaction
         if self.lot:
             yield self.lot
@@ -179,6 +184,22 @@ class Split(DeclarativeBaseGuid):
         # everything is fine, let us normalise the value with respect to the currency/commodity precisions
         self._quantity_denom_basis = self.account.commodity_scu
         self._value_denom_basis = self.transaction.currency.fraction
+
+        # ... and store what the caller has set at that precision, as the GnuCash engine does (xaccSplitSetValue
+        # converts to the fraction of the transaction currency, xaccSplitSetAmount to the SCU of the account):
+        # Decimal("119.9") was stored as 1199/10 and Decimal("120") as 120/1. Amounts the caller did not touch
+        # are left as they are stored (books written before this rule keep their reduced fractions until edited).
+        new = "new" in old["STATE_CHANGES"]
+        if (new or "_value_num" in old or "_value_denom" in old) and (
+            self._value_denom != self._value_denom_basis
+        ):
+            self.value = self.value
+            self.transaction._recalculate_balance = True
+        if (
+            new or "_quantity_num" in old or "_quantity_denom" in old or "account" in old
+        ) and self._quantity_denom != self._quantity_denom_basis:
+            self.quantity = self.quantity
+            self.transaction._recalculate_balance = True
 
         if self.transaction.currency != self.account.commodity and self.quantity:
             # let us also add a Price
@@ -369,8 +390,11 @@ class Transaction(DeclarativeBaseGuid):
             Decimal
         )  # hold imbalance on split.quantity per cdty
 
-        # collect imbalance information
+        # collect imbalance information (a split deleted in this session stays in the collection until
+        # the transaction is refreshed: it no longer counts)
         for sp in self.splits:
+            if sa_inspect(sp).deleted:
+                continue
             value_imbalance += sp.value
             quantity_imbalances[sp.account.commodity] += sp.quantity
 

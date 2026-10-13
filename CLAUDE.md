@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-piecash is a pure-Python SQLAlchemy ORM over GnuCash books stored in SQL (sqlite3, Postgres, MySQL). This repo is a community-maintained fork of `sdementen/piecash`. The same code runs on SQLAlchemy 1.4 and 2.0. Only books from GnuCash 3.0 / 3.7 / 4.1 are supported. The table-version matrix is `version_supported` in `piecash/core/session.py`.
+piecash is a pure-Python SQLAlchemy ORM over GnuCash books stored in SQL (sqlite3, Postgres, MySQL). This repo is a community-maintained fork of `sdementen/piecash`. The same code runs on SQLAlchemy 1.4 and 2.0. Only books from GnuCash 3.0 / 3.7 / 4.1 are supported (5.x kept the 4.1 table layout and opens as 4.1; no fixture written by GnuCash 5 yet). The table-version matrix is `version_supported` in `piecash/core/session.py`.
 
 ## Commands
 
@@ -38,7 +38,7 @@ CI (`.github/workflows/github-actions.yml`) runs Python 3.8–3.12 under `LC_ALL
 
 **Declarative base & read-only models** (`piecash/sa_extra.py`, `piecash/_declbase.py`): `DeclarativeBase` uses a constructor that raises `NotImplementedError`. Only models that define their own `__init__` can be created; everything else is read-only. `DeclarativeBaseGuid` adds the `guid` PK and a polymorphic `slots` relationship. It also mixes in `DictWrapper`, so `obj["kvp/path"]` reads and writes GnuCash KVP slots (`piecash/kvp.py`). `sa_extra.py` also holds GnuCash-specific column types (`_DateTime`, `_Date`, `_DateAsDateTime`, which handle GnuCash's string/UTC date storage per dialect) and helpers that expose slot values as attributes (`mapped_to_slot_property`, `pure_slot_property`, `kvp_attribute`).
 
-**Numeric values**: GnuCash stores amounts as `*_num`/`*_denom` integer pairs. `hybrid_property_gncnumeric` (`piecash/_common.py`) exposes them as `Decimal`.
+**Numeric values**: GnuCash stores amounts as `*_num`/`*_denom` integer pairs. `hybrid_property_gncnumeric` (`piecash/_common.py`) exposes them as `Decimal`. Since 1.2.5, `Split.validate` stores `value` at the fraction of the transaction currency and `quantity` at the SCU of the account, rounding half up, as the GnuCash engine does; only amounts the caller set in that session are rewritten (books hold older reduced fractions such as `1199/10`, and they stay until edited). The `_<x>_denom_basis` attributes do not survive a commit (the instance is expired), so do not rely on them outside `validate`.
 
 **Session lifecycle** (`piecash/core/session.py`):
 - `create_book` / `open_book` build a URI (`build_uri`), create an engine and check the `versions` table against `version_supported`. They honor the `gnclock` table (lock on open, refuse if locked unless `open_if_lock`) and back up sqlite files when opening read-write.

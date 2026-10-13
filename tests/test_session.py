@@ -128,3 +128,23 @@ def test_get_system_currency_mnemonic(locale_set):
     result = locales[locale_set]
     with locale_ctx(locale_set):
         assert get_system_currency_mnemonic() == result.strip()
+
+
+def test_open_book_written_by_gnucash_5(tmp_path):
+    """GnuCash 5.x kept the table layout of 4.1: only the program number in the ``versions`` table differs, and it is
+    not part of the comparison. There is no fixture written by GnuCash 5 in this repository, so this test stamps a
+    4.x fixture with a 5.x program number; it proves the number is ignored, not that a real 5.x book was read."""
+    import shutil
+    import sqlite3
+    from pathlib import Path
+
+    from piecash import open_book
+
+    copy = tmp_path / "five.gnucash"
+    shutil.copyfile(str(Path(__file__).parent / "books" / "historical_prices.gnucash"), str(copy))
+    con = sqlite3.connect(str(copy))
+    con.execute("UPDATE versions SET table_version = 5001600 WHERE table_name = 'Gnucash'")
+    con.commit()
+    con.close()
+    with open_book(str(copy), open_if_lock=True) as book:
+        assert len(book.accounts) > 0 and len(book.transactions) > 0

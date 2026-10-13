@@ -1,6 +1,23 @@
 What's new
 ==========
 
+Version 1.2.5 (2026-10-13)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- **what is written changes**: split ``value`` and ``quantity`` are stored at the smallest unit of the transaction currency /
+  account commodity, rounded half up, as the GnuCash engine does (``xaccSplitSetValue`` / ``xaccSplitSetAmount``).
+  Before, the scale of the ``Decimal`` was stored as given: ``Decimal("119.9")`` became ``1199/10`` and ``Decimal("120")``
+  became ``120/1`` (GnuCash writes ``11990/100`` and ``12000/100``). The numbers do not change, only the stored fraction.
+  Amounts the caller does not set are left as stored, so existing reduced fractions stay until that split is edited.
+  The row readers still return the stored integers: a downstream that compares them will see the new fractions for
+  splits written from now on
+- an amount with more decimals than its currency has is now rounded to the currency (it was stored with all its
+  decimals); if the rounding unbalances the transaction, ``GncImbalanceError`` is raised
+- fix: assigning an amount to a split whose scale is known truncated it (``1.999`` -> ``1.99``); it now rounds half up
+- fix: deleting a split from a transaction skipped the balance check, so an unbalanced transaction could be saved
+- test: a book whose ``versions`` table carries a GnuCash 5.x program number opens (GnuCash 5 kept the 4.1 table
+  layout; no fixture written by GnuCash 5 yet)
+
 Version 1.2.4 (2026-10-08)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
