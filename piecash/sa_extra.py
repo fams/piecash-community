@@ -18,6 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects import sqlite
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.schema import CreateTable
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import exc as orm_exc
 from sqlalchemy.orm import sessionmaker, object_session
@@ -106,6 +107,57 @@ class DeclarativeBase(object):
 
     def __repr__(self):
         return str(self)
+
+
+# GnuCash creates each table with its columns in the order of the column table of its SQL
+# backend (libgnucash/backend/sql/gnc-*-sql.cpp, stable branch at fec5643). To upgrade a table,
+# it copies the rows with ``INSERT INTO <table>_new SELECT * FROM <table>``, by position, and
+# drops the old table even if the copy failed. In a table whose columns are in another order,
+# the rows are lost, or the values land in the wrong columns.
+# The mapped classes cannot declare that order (the guid of DeclarativeBaseGuid and the columns
+# of mixins come after the columns of the class), so it is applied to CREATE TABLE only.
+# Every GnuCash table starts with its guid; these three also differ in the other columns.
+_ADDRESS_COLUMNS = ["name", "addr1", "addr2", "addr3", "addr4", "phone", "fax", "email"]
+
+
+def _address(prefix):
+    return ["{}_{}".format(prefix, name) for name in _ADDRESS_COLUMNS]
+
+
+_GNUCASH_COLUMN_ORDER = {
+    "customers": (
+        ["guid", "name", "id", "notes", "active", "discount_num", "discount_denom",
+         "credit_num", "credit_denom", "currency", "tax_override"]
+        + _address("addr")
+        + _address("shipaddr")
+        + ["terms", "tax_included", "taxtable"]
+    ),
+    "employees": (
+        ["guid", "username", "id", "language", "acl", "active", "currency", "ccard_guid",
+         "workday_num", "workday_denom", "rate_num", "rate_denom"]
+        + _address("addr")
+    ),
+    "vendors": (
+        ["guid", "name", "id", "notes", "currency", "active", "tax_override"]
+        + _address("addr")
+        + ["terms", "tax_inc", "tax_table"]
+    ),
+}
+
+
+@compiles(CreateTable)
+def _create_table_in_gnucash_column_order(create, compiler, **kw):
+    table = create.element
+    if table.metadata is DeclarativeBase.metadata:
+        order = _GNUCASH_COLUMN_ORDER.get(table.name)
+        if order:
+            position = {name: i for i, name in enumerate(order)}
+            create.columns = sorted(
+                create.columns, key=lambda c: position.get(c.element.name, len(order))
+            )
+        else:
+            create.columns = sorted(create.columns, key=lambda c: c.element.name != "guid")
+    return compiler.visit_create_table(create, **kw)
 
 
 tz = pytz.timezone(str(tzlocal.get_localzone()))

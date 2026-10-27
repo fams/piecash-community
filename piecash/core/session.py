@@ -301,7 +301,9 @@ def create_book(
         drop_database,
     )
 
-    VERSION_FORMAT = "3.0"
+    # the table versions of GnuCash >= 4.1 (splits 5): with an older version, GnuCash upgrades the
+    # table when it opens the book (see _GNUCASH_COLUMN_ORDER in sa_extra)
+    VERSION_FORMAT = "4.1"
 
     uri_conn = build_uri(
         sqlite_file,

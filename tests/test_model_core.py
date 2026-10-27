@@ -73,10 +73,10 @@ class TestModelCore_EmptyBook(object):
         assert slots == []
 
     def test_versions(self, session):
-        # confirm versions of tables
+        # confirm versions of tables (format 4.1 of version_supported)
         versions = session.query(Version.table_name, Version.table_version).all()
         assert set(versions) == {
-            (u"Gnucash", 3000000),
+            (u"Gnucash", 4000001),
             (u"Gnucash-Resave", 19920),
             (u"accounts", 1),
             (u"books", 1),
@@ -90,7 +90,7 @@ class TestModelCore_EmptyBook(object):
             (u"recurrences", 2),
             (u"slots", 4),
             (u"transactions", 4),
-            (u"splits", 4),
+            (u"splits", 5),
             (u"lots", 2),
             (u"entries", 4),
             (u"billterms", 2),
