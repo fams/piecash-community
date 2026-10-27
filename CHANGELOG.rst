@@ -1,6 +1,22 @@
 What's new
 ==========
 
+Version 1.2.7 (2026-10-27)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- fix: a book created by ``create_book`` lost all its splits when opened in GnuCash 4 or 5. It was created with the
+  table versions of GnuCash 3.0 (``splits`` version 4), so GnuCash upgraded the ``splits`` table on opening. That upgrade
+  copies the rows by column position (``INSERT INTO splits_new SELECT * FROM splits``) and then drops the old table even
+  when the copy failed, and piecash created the ``guid`` column last instead of first. ``create_book`` now writes the
+  table versions of GnuCash 4.1 (``splits`` version 5, ``Gnucash`` 4000001), the ones current GnuCash uses
+- fix: ``create_book`` creates every table with its columns in the order GnuCash uses (``guid`` first; ``customers``,
+  ``employees`` and ``vendors`` in GnuCash's order throughout), so a future GnuCash table upgrade copies the rows intact.
+  Only the ``CREATE TABLE`` statements change; the mapped classes are unchanged
+- warning: books created by ``create_book`` before 1.2.7 still have the old table versions and column order. Do not
+  open one in GnuCash 4 or 5 without a backup copy
+- tests: a new book has the table versions and the column order of a book written by GnuCash 4.0.8, and a simulated
+  GnuCash table upgrade keeps every row and every value
+
 Version 1.2.6 (2026-10-13)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
